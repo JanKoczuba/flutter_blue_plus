@@ -937,7 +937,6 @@ public class FlutterBluePlusPlugin implements
                         break;
                     }
 
-                    System.out.println(index);
                     // wait if any device is bonding (increases reliability)
                     waitIfBonding();
 
