@@ -32,7 +32,9 @@ class BmMsdFilter {
   int manufacturerId;
   List<int>? data;
   List<int>? mask;
+
   BmMsdFilter(this.manufacturerId, this.data, this.mask);
+
   Map<dynamic, dynamic> toMap() {
     final Map<dynamic, dynamic> map = {};
     map['manufacturer_id'] = manufacturerId;
@@ -46,7 +48,9 @@ class BmServiceDataFilter {
   Guid service;
   List<int> data;
   List<int> mask;
+
   BmServiceDataFilter(this.service, this.data, this.mask);
+
   Map<dynamic, dynamic> toMap() {
     final Map<dynamic, dynamic> map = {};
     map['service'] = service.str;
@@ -150,7 +154,8 @@ class BmScanAdvertisement {
       remoteId: DeviceIdentifier(json['remote_id']),
       platformName: json['platform_name'],
       advName: json['adv_name'],
-      connectable: json['connectable'] != null ? json['connectable'] != 0 : false,
+      connectable:
+          json['connectable'] != null ? json['connectable'] != 0 : false,
       txPowerLevel: json['tx_power_level'],
       appearance: json['appearance'],
       manufacturerData: manufacturerData,
@@ -274,8 +279,18 @@ class BmBluetoothService {
   factory BmBluetoothService.fromMap(Map<dynamic, dynamic> json) {
     // convert characteristics
     List<BmBluetoothCharacteristic> chrs = [];
+
+    int index = 0;
+
+    Map<String, int> uuidIndex = {};
     for (var v in json['characteristics']) {
-      chrs.add(BmBluetoothCharacteristic.fromMap(v));
+      String key = v['characteristic_uuid'];
+      if (uuidIndex.containsKey(key)) {
+        index = (uuidIndex[key] ?? 0) + 1;
+      }
+      uuidIndex[key] = index;
+      final chr = BmBluetoothCharacteristic.fromMap(v, index);
+      chrs.add(chr);
     }
 
     // convert services
@@ -301,6 +316,7 @@ class BmBluetoothCharacteristic {
   final Guid characteristicUuid;
   List<BmBluetoothDescriptor> descriptors;
   BmCharacteristicProperties properties;
+  final int index;
 
   BmBluetoothCharacteristic({
     required this.remoteId,
@@ -309,22 +325,26 @@ class BmBluetoothCharacteristic {
     required this.characteristicUuid,
     required this.descriptors,
     required this.properties,
+    required this.index,
   });
 
-  factory BmBluetoothCharacteristic.fromMap(Map<dynamic, dynamic> json) {
+  factory BmBluetoothCharacteristic.fromMap(
+      Map<dynamic, dynamic> json, int index) {
     // convert descriptors
     List<BmBluetoothDescriptor> descs = [];
     for (var v in json['descriptors']) {
       descs.add(BmBluetoothDescriptor.fromMap(v));
     }
-
     return BmBluetoothCharacteristic(
       remoteId: DeviceIdentifier(json['remote_id']),
       serviceUuid: Guid(json['service_uuid']),
-      secondaryServiceUuid: json['secondary_service_uuid'] != null ? Guid(json['secondary_service_uuid']) : null,
+      secondaryServiceUuid: json['secondary_service_uuid'] != null
+          ? Guid(json['secondary_service_uuid'])
+          : null,
       characteristicUuid: Guid(json['characteristic_uuid']),
       descriptors: descs,
       properties: BmCharacteristicProperties.fromMap(json['properties']),
+      index: index,
     );
   }
 }
@@ -426,12 +446,14 @@ class BmReadCharacteristicRequest {
   final Guid serviceUuid;
   final Guid? secondaryServiceUuid;
   final Guid characteristicUuid;
+  final int index;
 
   BmReadCharacteristicRequest({
     required this.remoteId,
     required this.serviceUuid,
     this.secondaryServiceUuid,
     required this.characteristicUuid,
+    required this.index,
   });
 
   Map<dynamic, dynamic> toMap() {
@@ -440,6 +462,7 @@ class BmReadCharacteristicRequest {
     data['service_uuid'] = serviceUuid.str;
     data['secondary_service_uuid'] = secondaryServiceUuid?.str;
     data['characteristic_uuid'] = characteristicUuid.str;
+    data['characteristic_uuid_index'] = index;
     return data;
   }
 }
@@ -453,6 +476,7 @@ class BmCharacteristicData {
   final bool success;
   final int errorCode;
   final String errorString;
+  final int index;
 
   BmCharacteristicData({
     required this.remoteId,
@@ -463,18 +487,23 @@ class BmCharacteristicData {
     required this.success,
     required this.errorCode,
     required this.errorString,
+    required this.index,
   });
 
   factory BmCharacteristicData.fromMap(Map<dynamic, dynamic> json) {
+    log("json $json");
     return BmCharacteristicData(
       remoteId: DeviceIdentifier(json['remote_id']),
       serviceUuid: Guid(json['service_uuid']),
-      secondaryServiceUuid: json['secondary_service_uuid'] != null ? Guid(json['secondary_service_uuid']) : null,
+      secondaryServiceUuid: json['secondary_service_uuid'] != null
+          ? Guid(json['secondary_service_uuid'])
+          : null,
       characteristicUuid: Guid(json['characteristic_uuid']),
       value: _hexDecode(json['value']),
       success: json['success'] != 0,
       errorCode: json['error_code'],
       errorString: json['error_string'],
+      index: 0,
     );
   }
 }
@@ -485,6 +514,7 @@ class BmReadDescriptorRequest {
   final Guid? secondaryServiceUuid;
   final Guid characteristicUuid;
   final Guid descriptorUuid;
+  final int index;
 
   BmReadDescriptorRequest({
     required this.remoteId,
@@ -492,6 +522,7 @@ class BmReadDescriptorRequest {
     required this.secondaryServiceUuid,
     required this.characteristicUuid,
     required this.descriptorUuid,
+    required this.index,
   });
 
   Map<dynamic, dynamic> toMap() {
@@ -501,6 +532,7 @@ class BmReadDescriptorRequest {
     data['secondary_service_uuid'] = secondaryServiceUuid?.str;
     data['characteristic_uuid'] = characteristicUuid.str;
     data['descriptor_uuid'] = descriptorUuid.str;
+    data['characteristic_uuid_index'] = index;
     return data;
   }
 }
@@ -598,7 +630,9 @@ class BmDescriptorData {
     return BmDescriptorData(
       remoteId: DeviceIdentifier(json['remote_id']),
       serviceUuid: Guid(json['service_uuid']),
-      secondaryServiceUuid: json['secondary_service_uuid'] != null ? Guid(json['secondary_service_uuid']) : null,
+      secondaryServiceUuid: json['secondary_service_uuid'] != null
+          ? Guid(json['secondary_service_uuid'])
+          : null,
       characteristicUuid: Guid(json['characteristic_uuid']),
       descriptorUuid: Guid(json['descriptor_uuid']),
       value: _hexDecode(json['value']),
@@ -659,7 +693,8 @@ class BmConnectionStateResponse {
   factory BmConnectionStateResponse.fromMap(Map<dynamic, dynamic> json) {
     return BmConnectionStateResponse(
       remoteId: DeviceIdentifier(json['remote_id']),
-      connectionState: BmConnectionStateEnum.values[json['connection_state'] as int],
+      connectionState:
+          BmConnectionStateEnum.values[json['connection_state'] as int],
       disconnectReasonCode: json['disconnect_reason_code'],
       disconnectReasonString: json['disconnect_reason_string'],
     );
@@ -833,7 +868,9 @@ class BmBondStateResponse {
     return BmBondStateResponse(
       remoteId: DeviceIdentifier(json['remote_id']),
       bondState: BmBondStateEnum.values[json['bond_state']],
-      prevState: json['prev_state'] != null ? BmBondStateEnum.values[json['prev_state']] : null,
+      prevState: json['prev_state'] != null
+          ? BmBondStateEnum.values[json['prev_state']]
+          : null,
     );
   }
 }

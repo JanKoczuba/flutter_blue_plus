@@ -9,19 +9,24 @@ class BluetoothDescriptor {
   final Guid serviceUuid;
   final Guid characteristicUuid;
   final Guid descriptorUuid;
+  final int characteristicsIndex;
 
   BluetoothDescriptor({
     required this.remoteId,
     required this.serviceUuid,
     required this.characteristicUuid,
     required this.descriptorUuid,
+    required this.characteristicsIndex,
   });
 
-  BluetoothDescriptor.fromProto(BmBluetoothDescriptor p)
-      : remoteId = p.remoteId,
+  BluetoothDescriptor.fromProto(
+    BmBluetoothDescriptor p,
+    int index,
+  )   : remoteId = p.remoteId,
         serviceUuid = p.serviceUuid,
         characteristicUuid = p.characteristicUuid,
-        descriptorUuid = p.descriptorUuid;
+        descriptorUuid = p.descriptorUuid,
+        characteristicsIndex = index;
 
   /// convenience accessor
   Guid get uuid => descriptorUuid;
@@ -43,7 +48,8 @@ class BluetoothDescriptor {
   ///   - anytime `write()` is called
   ///   - and when first listened to, it re-emits the last value for convenience
   Stream<List<int>> get lastValueStream => FlutterBluePlus._methodStream.stream
-      .where((m) => m.method == "OnDescriptorRead" || m.method == "OnDescriptorWritten")
+      .where((m) =>
+          m.method == "OnDescriptorRead" || m.method == "OnDescriptorWritten")
       .map((m) => m.arguments)
       .map((args) => BmDescriptorData.fromMap(args))
       .where((p) => p.remoteId == remoteId)
@@ -71,8 +77,8 @@ class BluetoothDescriptor {
   Future<List<int>> read({int timeout = 15}) async {
     // check connected
     if (device.isDisconnected) {
-      throw FlutterBluePlusException(
-          ErrorPlatform.fbp, "readDescriptor", FbpErrorCode.deviceIsDisconnected.index, "device is not connected");
+      throw FlutterBluePlusException(ErrorPlatform.fbp, "readDescriptor",
+          FbpErrorCode.deviceIsDisconnected.index, "device is not connected");
     }
 
     // Only allow a single ble operation to be underway at a time
@@ -89,9 +95,11 @@ class BluetoothDescriptor {
         secondaryServiceUuid: null,
         characteristicUuid: characteristicUuid,
         descriptorUuid: descriptorUuid,
+        index: characteristicsIndex,
       );
 
-      Stream<BmDescriptorData> responseStream = FlutterBluePlus._methodStream.stream
+      Stream<BmDescriptorData> responseStream = FlutterBluePlus
+          ._methodStream.stream
           .where((m) => m.method == "OnDescriptorRead")
           .map((m) => m.arguments)
           .map((args) => BmDescriptorData.fromMap(args))
@@ -114,7 +122,8 @@ class BluetoothDescriptor {
 
       // failed?
       if (!response.success) {
-        throw FlutterBluePlusException(_nativeError, "readDescriptor", response.errorCode, response.errorString);
+        throw FlutterBluePlusException(_nativeError, "readDescriptor",
+            response.errorCode, response.errorString);
       }
 
       readValue = response.value;
@@ -129,8 +138,8 @@ class BluetoothDescriptor {
   Future<void> write(List<int> value, {int timeout = 15}) async {
     // check connected
     if (device.isDisconnected) {
-      throw FlutterBluePlusException(
-          ErrorPlatform.fbp, "writeDescriptor", FbpErrorCode.deviceIsDisconnected.index, "device is not connected");
+      throw FlutterBluePlusException(ErrorPlatform.fbp, "writeDescriptor",
+          FbpErrorCode.deviceIsDisconnected.index, "device is not connected");
     }
 
     // Only allow a single ble operation to be underway at a time
@@ -147,7 +156,8 @@ class BluetoothDescriptor {
         value: value,
       );
 
-      Stream<BmDescriptorData> responseStream = FlutterBluePlus._methodStream.stream
+      Stream<BmDescriptorData> responseStream = FlutterBluePlus
+          ._methodStream.stream
           .where((m) => m.method == "OnDescriptorWritten")
           .map((m) => m.arguments)
           .map((args) => BmDescriptorData.fromMap(args))
@@ -170,7 +180,8 @@ class BluetoothDescriptor {
 
       // failed?
       if (!response.success) {
-        throw FlutterBluePlusException(_nativeError, "writeDescriptor", response.errorCode, response.errorString);
+        throw FlutterBluePlusException(_nativeError, "writeDescriptor",
+            response.errorCode, response.errorString);
       }
     } finally {
       mtx.give();
