@@ -411,6 +411,7 @@ LNONE = 0,
             NSString *characteristicUuid = args[@"characteristic_uuid"];
             NSString *serviceUuid = args[@"service_uuid"];
             NSString *secondaryServiceUuid = args[@"secondary_service_uuid"];
+            NSInteger index = [args[@"characteristic_uuid_index"] integerValue];
 
             // Find peripheral
             CBPeripheral *peripheral = [self getConnectedPeripheral:remoteId];
@@ -422,11 +423,26 @@ LNONE = 0,
 
             // Find characteristic
             NSError *error = nil;
-            CBCharacteristic *characteristic = [self locateCharacteristic:characteristicUuid
-                                                               peripheral:peripheral
-                                                                serviceId:serviceUuid
-                                                       secondaryServiceId:secondaryServiceUuid
-                                                                    error:&error];
+            NSArray<CBCharacteristic *> *characteristics = [self locateCharacteristic:characteristicUuid
+                                                                              peripheral:peripheral
+                                                                               serviceId:serviceUuid
+                                                                      secondaryServiceId:secondaryServiceUuid
+                                                                                   error:&error];
+
+            if (characteristics == nil) {
+                result([FlutterError errorWithCode:@"readCharacteristic" message:error.localizedDescription details:NULL]);
+                return;
+            }
+            NSLog(@"The answer is %d", characteristics.count);
+
+            if (index < 0 || index >= characteristics.count) {
+                NSString *s = @"Invalid characteristic index";
+                result([FlutterError errorWithCode:@"readCharacteristic1" message:s details:nil]);
+                return;
+            }
+            CBCharacteristic *characteristic = characteristics[index];
+
+           
             if (characteristic == nil) {
                 result([FlutterError errorWithCode:@"readCharacteristic" message:error.localizedDescription details:NULL]);
                 return;
@@ -448,6 +464,7 @@ LNONE = 0,
             NSDictionary *args = (NSDictionary *) call.arguments;
             NSString *remoteId = args[@"remote_id"];
             NSString *characteristicUuid = args[@"characteristic_uuid"];
+            NSInteger index = [args[@"characteristic_uuid_index"] integerValue];
             NSString *serviceUuid = args[@"service_uuid"];
             NSString *secondaryServiceUuid = args[@"secondary_service_uuid"];
             NSNumber *writeTypeNumber = args[@"write_type"];
@@ -493,15 +510,23 @@ LNONE = 0,
 
             // Find characteristic
             NSError *error = nil;
-            CBCharacteristic *characteristic = [self locateCharacteristic:characteristicUuid
-                                                               peripheral:peripheral
-                                                                serviceId:serviceUuid
-                                                       secondaryServiceId:secondaryServiceUuid
-                                                                    error:&error];
-            if (characteristic == nil) {
+            NSArray<CBCharacteristic *> *characteristics = [self locateCharacteristic:characteristicUuid
+                                                                              peripheral:peripheral
+                                                                               serviceId:serviceUuid
+                                                                      secondaryServiceId:secondaryServiceUuid
+                                                                                   error:&error];
+
+            if (characteristics == nil) {
                 result([FlutterError errorWithCode:@"writeCharacteristic" message:error.localizedDescription details:NULL]);
                 return;
             }
+            if (index < 0 || index >= characteristics.count) {
+                NSString *s = @"Invalid characteristic index";
+                result([FlutterError errorWithCode:@"writeCharacteristic" message:s details:nil]);
+                return;
+            }
+            
+            CBCharacteristic *characteristic = characteristics[index];
 
             // check writeable
             if (writeType == CBCharacteristicWriteWithoutResponse) {
@@ -540,6 +565,8 @@ LNONE = 0,
             NSString *serviceUuid = args[@"service_uuid"];
             NSString *secondaryServiceUuid = args[@"secondary_service_uuid"];
             NSString *characteristicUuid = args[@"characteristic_uuid"];
+            NSInteger index = [args[@"characteristic_uuid_index"] integerValue];
+
 
             // Find peripheral
             CBPeripheral *peripheral = [self getConnectedPeripheral:remoteId];
@@ -551,15 +578,24 @@ LNONE = 0,
 
             // Find characteristic
             NSError *error = nil;
-            CBCharacteristic *characteristic = [self locateCharacteristic:characteristicUuid
+            NSArray<CBCharacteristic *> *characteristics = [self locateCharacteristic:characteristicUuid
                                                                peripheral:peripheral
                                                                 serviceId:serviceUuid
                                                        secondaryServiceId:secondaryServiceUuid
                                                                     error:&error];
-            if (characteristic == nil) {
+            if (characteristics == nil) {
                 result([FlutterError errorWithCode:@"readDescriptor" message:error.localizedDescription details:NULL]);
                 return;
             }
+            
+            if (index < 0 || index >= characteristics.count) {
+                NSString *s = @"Invalid characteristic index";
+                result([FlutterError errorWithCode:@"readDescriptor" message:s details:nil]);
+                return;
+            }
+
+            CBCharacteristic *characteristic = characteristics[index];
+
 
             // Find descriptor
             CBDescriptor *descriptor = [self locateDescriptor:descriptorUuid characteristic:characteristic error:&error];
@@ -579,6 +615,7 @@ LNONE = 0,
             NSString *serviceUuid = args[@"service_uuid"];
             NSString *secondaryServiceUuid = args[@"secondary_service_uuid"];
             NSString *characteristicUuid = args[@"characteristic_uuid"];
+            NSInteger index = [args[@"characteristic_uuid_index"] integerValue];
             NSString *value = args[@"value"];
 
             // Find peripheral
@@ -601,11 +638,23 @@ LNONE = 0,
 
             // Find characteristic
             NSError *error = nil;
-            CBCharacteristic *characteristic = [self locateCharacteristic:characteristicUuid
-                                                               peripheral:peripheral
-                                                                serviceId:serviceUuid
-                                                       secondaryServiceId:secondaryServiceUuid
-                                                                    error:&error];
+            NSArray<CBCharacteristic *> *characteristics = [self locateCharacteristic:characteristicUuid
+                                                                              peripheral:peripheral
+                                                                               serviceId:serviceUuid
+                                                                      secondaryServiceId:secondaryServiceUuid
+                                                                                   error:&error];
+
+            if (characteristics == nil) {
+                result([FlutterError errorWithCode:@"writeDescriptor" message:error.localizedDescription details:NULL]);
+                return;
+            }
+            if (index < 0 || index >= characteristics.count) {
+                NSString *s = @"Invalid characteristic index";
+                result([FlutterError errorWithCode:@"writeDescriptor" message:s details:nil]);
+                return;
+            }
+            CBCharacteristic *characteristic = characteristics[index];
+            
             if (characteristic == nil) {
                 result([FlutterError errorWithCode:@"writeDescriptor" message:error.localizedDescription details:NULL]);
                 return;
@@ -633,6 +682,7 @@ LNONE = 0,
             NSString *serviceUuid = args[@"service_uuid"];
             NSString *secondaryServiceUuid = args[@"secondary_service_uuid"];
             NSString *characteristicUuid = args[@"characteristic_uuid"];
+            NSInteger index = [args[@"characteristic_uuid_index"] integerValue];
             NSNumber *enable = args[@"enable"];
 
             // Find peripheral
@@ -645,11 +695,23 @@ LNONE = 0,
 
             // Find characteristic
             NSError *error = nil;
-            CBCharacteristic *characteristic = [self locateCharacteristic:characteristicUuid
-                                                               peripheral:peripheral
-                                                                serviceId:serviceUuid
-                                                       secondaryServiceId:secondaryServiceUuid
-                                                                    error:&error];
+            NSArray<CBCharacteristic *> *characteristics = [self locateCharacteristic:characteristicUuid
+                                                                              peripheral:peripheral
+                                                                               serviceId:serviceUuid
+                                                                      secondaryServiceId:secondaryServiceUuid
+                                                                                   error:&error];
+
+            if (characteristics == nil) {
+                result([FlutterError errorWithCode:@"setNotifyValue" message:error.localizedDescription details:NULL]);
+                return;
+            }
+            if (index < 0 || index >= characteristics.count) {
+                NSString *s = @"Invalid characteristic index";
+                result([FlutterError errorWithCode:@"setNotifyValue" message:s details:nil]);
+                return;
+            }
+            CBCharacteristic *characteristic = characteristics[index];
+
             if (characteristic == nil) {
                 result([FlutterError errorWithCode:@"setNotifyValue" message:error.localizedDescription details:NULL]);
                 return;
@@ -750,7 +812,7 @@ LNONE = 0,
     return [self.connectedPeripherals objectForKey:remoteId];
 }
 
-- (CBCharacteristic *)locateCharacteristic:(NSString *)characteristicId
+- (NSArray<CBCharacteristic *> *)locateCharacteristic:(NSString *)characteristicId
                                 peripheral:(CBPeripheral *)peripheral
                                  serviceId:(NSString *)serviceId
                         secondaryServiceId:(NSString *)secondaryServiceId
@@ -781,7 +843,8 @@ LNONE = 0,
     CBService *service = (secondaryService != nil) ? secondaryService : primaryService;
 
     // characteristic
-    CBCharacteristic *characteristic = [self getCharacteristicFromArray:characteristicId array:[service characteristics]];
+    NSMutableArray<CBCharacteristic *> *characteristic = [self getCharacteristicFromArray:characteristicId array:[service characteristics]];
+
     if (characteristic == nil) {
         NSString *format = @"characteristic not found in service (chr: '%@', svc: '%@')";
         NSString *s = [NSString stringWithFormat:format, characteristicId, serviceId];
@@ -817,16 +880,15 @@ LNONE = 0,
     return nil;
 }
 
-- (CBCharacteristic *)getCharacteristicFromArray:(NSString *)uuid array:(NSArray
+- (NSArray<CBCharacteristic *> *)getCharacteristicFromArray:(NSString *)uuid array:(NSArray<CBCharacteristic *> *)array {
+    NSMutableArray<CBCharacteristic *> *chr = [NSMutableArray array];
 
-<CBCharacteristic *> *)array
-{
     for (CBCharacteristic *c in array) {
         if ([c.UUID isEqual:[CBUUID UUIDWithString:uuid]]) {
-            return c;
+            [chr addObject:c];
         }
     }
-    return nil;
+    return chr;
 }
 
 - (CBDescriptor *)getDescriptorFromArray:(NSString *)uuid array:(NSArray
